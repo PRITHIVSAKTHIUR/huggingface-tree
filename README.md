@@ -1,6 +1,9 @@
 # **huggingface-tree**
 
-
+<img src="https://github.com/user-attachments/assets/d9892246-7bd6-471a-9be8-17105f92faac" 
+     align="left" 
+     width="100" 
+     style="border-radius:15px; margin-right:15px;">
 
 A lightweight, browser-based tool to visualize the file structure of any HuggingFace model, dataset, or space without cloning the repository. huggingface-tree (hf-tree) fetches and renders the complete directory tree of any public or private HuggingFace repository directly in the browser. It communicates with the HuggingFace API and requires no local installation or backend server.
 
