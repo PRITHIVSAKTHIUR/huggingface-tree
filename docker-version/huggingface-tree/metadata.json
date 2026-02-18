@@ -1,0 +1,5 @@
+{
+  "name": "HFTree",
+  "description": "Visualize HuggingFace repository structures without cloning.",
+  "requestFramePermissions": []
+}

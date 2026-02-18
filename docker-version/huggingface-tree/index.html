@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HuggingFace Repo Structure Visualizer : HFTree</title>
+    <meta name="description" content="Effortlessly explore and visualize the file structure of any HuggingFace model, dataset, or space online without cloning.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="index.css">
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@19.0.0",
+        "react-dom": "https://esm.sh/react-dom@19.0.0",
+        "lucide-react": "https://esm.sh/lucide-react@0.474.0",
+        "@google/genai": "https://esm.sh/@google/genai@0.2.1"
+      }
+    }
+    </script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="brand">
+                <a href="#">
+                    <div class="brand-icon"><i class="fas fa-tree"></i></div>
+                    <span>hf-tree🤗</span>
+                </a>
+            </div>
+            <div class="header-actions">
+                <button id="privateRepoBtn" class="text-btn" title="Access Private Repos">
+                    <i class="fas fa-lock"></i> Token
+                </button>
+                <button id="themeToggle" class="icon-btn" aria-label="Toggle Theme">
+                    <i class="fas fa-sun sun-icon"></i>
+                    <i class="fas fa-moon moon-icon"></i>
+                </button>
+            </div>
+        </header>
+
+        <div id="tokenSection" class="token-panel" style="display: none;">
+            <div class="token-inner">
+                <i class="fas fa-key"></i>
+                <input type="password" id="hfToken" placeholder="Paste HuggingFace Access Token (hf_...)">
+                <button id="saveTokenBtn">Save</button>
+                <button id="clearTokenBtn" style="display:none;">Clear</button>
+            </div>
+            <p class="token-warning">
+                <i class="fas fa-exclamation-triangle"></i> Token is saved to your browser's <b>LocalStorage</b>. Do not use on public computers.
+            </p>
+        </div>
+
+        <div class="search-section">
+            <div class="type-selector">
+                <button class="type-btn active-model" data-type="models" id="typeModel">
+                    <i class="fas fa-cube"></i> Model
+                </button>
+                <button class="type-btn" data-type="datasets" id="typeDataset">
+                    <i class="fas fa-database"></i> Dataset
+                </button>
+                <button class="type-btn" data-type="spaces" id="typeSpace">
+                    <i class="fas fa-rocket"></i> Space
+                </button>
+            </div>
+            <div class="input-group main-input">
+                <span class="prefix" id="urlPrefix">hf.co/</span>
+                <input type="text" id="repoInput" placeholder="username/repo-name" autocomplete="off">
+            </div>
+            <div class="input-group branch-input">
+                <span class="prefix">rev:</span>
+                <input type="text" id="branchInput" placeholder="main" autocomplete="off">
+            </div>
+            <button id="fetchBtn" class="primary-btn">
+                <i class="fas fa-search"></i> Fetch
+            </button>
+        </div>
+
+        <div id="statusMsg" style="display: none;"></div>
+
+        <div id="repoInfoCard" class="repo-info-card">
+            <div class="repo-info-header">
+                <div class="repo-info-left">
+                    <span class="repo-type-badge" id="repoTypeBadge">MODEL</span>
+                    <span class="repo-info-name" id="repoInfoName"></span>
+                </div>
+                <div class="repo-info-stats" id="repoInfoStats"></div>
+            </div>
+        </div>
+
+        <div id="emptyState" class="empty-state">
+            <div class="homepage-section">
+                <h3 style="font-size: 1.3rem; text-transform: none; letter-spacing: -0.02em; color: var(--text);">
+                    explore huggingface repositories
+                </h3>
+                <p>Visualize the file tree of any Model, Dataset, or Space</p>
+            </div>
+            <div class="homepage-section">
+                <h3>Featured</h3>
+                <div id="featuredCloud" class="tag-cloud"></div>
+            </div>
+            <div class="homepage-section">
+                <h3>Popular Models</h3>
+                <div id="modelCloud" class="tag-cloud"></div>
+            </div>
+            <div class="homepage-section">
+                <h3>Popular Datasets</h3>
+                <div id="datasetCloud" class="tag-cloud"></div>
+            </div>
+        </div>
+
+        <div id="treeWrapper" class="tree-wrapper" style="display: none;">
+            <div class="toolbar">
+                <div class="tools-group">
+                    <div class="dropdown">
+                        <button class="tool-btn" id="sortBtnLabel">
+                            <i class="fas fa-sort-amount-down"></i> Sort
+                        </button>
+                        <div class="dropdown-content">
+                            <a href="#" data-sort="folder-az">Folders First (A-Z)</a>
+                            <a href="#" data-sort="folder-za">Folders First (Z-A)</a>
+                            <a href="#" data-sort="alpha-az">Name (A-Z)</a>
+                            <a href="#" data-sort="alpha-za">Name (Z-A)</a>
+                            <a href="#" data-sort="size-desc">Size (Largest)</a>
+                            <a href="#" data-sort="size-asc">Size (Smallest)</a>
+                        </div>
+                    </div>
+                    <div class="dropdown">
+                        <button class="tool-btn" id="styleBtnLabel">
+                            <i class="fas fa-code-branch"></i> Style
+                        </button>
+                        <div class="dropdown-content">
+                            <a href="#" data-style="classic">Classic (└──)</a>
+                            <a href="#" data-style="slashed">Slashed (/src)</a>
+                            <a href="#" data-style="plus">ASCII (+--)</a>
+                            <a href="#" data-style="minimal">Minimal (Indent)</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="tools-group right">
+                    <button id="shareBtn" class="tool-btn">
+                        <i class="fas fa-share-alt"></i> Share
+                    </button>
+                    <button id="copyAllBtn" class="tool-btn action-btn">
+                        <i class="far fa-copy"></i> Copy Tree
+                    </button>
+                </div>
+            </div>
+            <div class="tree-search">
+                <input type="text" id="treeFilter" placeholder="Filter files… (e.g. .safetensors, config, README)">
+            </div>
+            <div class="terminal-window">
+                <div id="lineNumbers" class="line-col"></div>
+                <div id="treeContent" class="code-col"></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            Built by <a href="https://hf.co/prithivMLmods" target="_blank" rel="noopener">prithivMLmods</a>
+        </div>
+    </div>
+
+    <div id="shareOverlay" class="overlay">
+        <div class="overlay-content">
+            <h3>Share View</h3>
+            <div class="share-box">
+                <input type="text" id="shareInput" readonly>
+                <button id="copyShareBtn"><i class="far fa-copy"></i></button>
+            </div>
+            <button id="closeOverlay" class="close-btn">&times;</button>
+        </div>
+    </div>
+
+    <script type="module" src="index.tsx"></script>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>
