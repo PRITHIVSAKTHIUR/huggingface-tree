@@ -1,19 +1,27 @@
 # **huggingface-tree**
 
-<img src="https://github.com/user-attachments/assets/d9892246-7bd6-471a-9be8-17105f92faac" 
-     align="left" 
-     width="150" 
-     style="border-radius:15px; margin-right:15px;">
-
-A lightweight, browser-based tool to visualize the file structure of any HuggingFace model, dataset, or space without cloning the repository. huggingface-tree (hf-tree) fetches and renders the complete directory tree of any public or private HuggingFace repository directly in the browser. It communicates with the HuggingFace API and requires no local installation or backend server.
-
----
+<table>
+  <tr>
+    <td width="40%" align="center">
+      <img src="https://github.com/user-attachments/assets/34529f38-1e64-4268-89f1-5a209748c91e" alt="hf-tree preview" width="100%">
+    </td>
+    <td width="60%">
+      <h3>🌳 huggingface-tree (hf-tree)</h3>
+      <p>
+        A lightweight, browser-based tool to visualize the file structure of any Hugging Face model, dataset, or Space without cloning the repository.
+      </p>
+      <p>
+        <strong>huggingface-tree (hf-tree)</strong> fetches and renders the complete directory tree of any public or private Hugging Face repository directly in the browser.
+      </p>
+      <p>
+        It communicates with the Hugging Face API and requires no local installation or backend server.
+      </p>
+    </td>
+  </tr>
+</table>
 
 > [!IMPORTANT]
-docker-app: https://huggingface.co/spaces/strangertoolshf/huggingface-tree
-
-> [!IMPORTANT]
-static-app: https://prithivsakthiur.github.io/huggingface-tree/
+docker-app: [hf-space](https://huggingface.co/spaces/strangertoolshf/huggingface-tree), static-app: [github-pages](https://prithivsakthiur.github.io/huggingface-tree/)
 
 ## Features
 
