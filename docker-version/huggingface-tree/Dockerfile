@@ -6,8 +6,8 @@ COPY package.json ./
 RUN npm install
 
 COPY index.html ./
-COPY index.tsx ./
-COPY index.css ./
+# COPY index.tsx ./
+# COPY index.css ./
 COPY metadata.json ./
 COPY tsconfig.json ./
 COPY vite.config.ts ./
