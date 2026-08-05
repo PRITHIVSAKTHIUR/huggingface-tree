@@ -1,4 +1,4 @@
-# **huggingface-tree**
+# **[huggingface-tree](https://huggingface.co/spaces/strangertoolshf/huggingface-tree)**
 
 <table>
   <tr>
