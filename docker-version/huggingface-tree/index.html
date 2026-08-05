@@ -3,175 +3,1405 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HuggingFace Repo Structure Visualizer : HFTree</title>
+    <title>hftree-visualizer</title>
     <meta name="description" content="Effortlessly explore and visualize the file structure of any HuggingFace model, dataset, or space online without cloning.">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="index.css">
-    <script type="importmap">
-    {
-      "imports": {
-        "react": "https://esm.sh/react@19.0.0",
-        "react-dom": "https://esm.sh/react-dom@19.0.0",
-        "lucide-react": "https://esm.sh/lucide-react@0.474.0",
-        "@google/genai": "https://esm.sh/@google/genai@0.2.1"
-      }
-    }
-    </script>
-<link rel="stylesheet" href="/index.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Courier New', monospace;
+            background: #000000;
+            color: #ffffff;
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+        }
+
+        button, input, select { font-family: inherit; }
+        a { text-decoration: none; color: inherit; }
+
+        ::selection { background: #ffffff; color: #000000; }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #333333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555555; }
+        ::-webkit-scrollbar-track { background: #000000; }
+
+        .terminal-shell {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ── Title Bar ── */
+        .title-bar {
+            display: flex;
+            align-items: center;
+            padding: 14px 20px;
+            border-bottom: 1px solid #222222;
+            gap: 12px;
+            user-select: none;
+            position: sticky;
+            top: 0;
+            background: #000000;
+            z-index: 100;
+        }
+
+        .title-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ffffff;
+            flex-shrink: 0;
+            box-shadow: 0 0 6px rgba(255,255,255,0.4);
+        }
+
+        .title-text {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #ffffff;
+            letter-spacing: 0.02em;
+        }
+
+        .title-actions {
+            margin-left: auto;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .title-btn {
+            background: transparent;
+            border: 1px solid #333333;
+            color: #888888;
+            padding: 5px 12px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.72rem;
+            font-weight: 500;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .title-btn:hover { border-color: #ffffff; color: #ffffff; }
+        .title-btn.active-token { color: #ffffff; border-color: #555555; }
+
+        /* ── Token Section ── */
+        .token-section {
+            border-bottom: 1px solid #222222;
+            padding: 14px 20px;
+            animation: termSlide 0.2s ease-out;
+        }
+
+        @keyframes termSlide {
+            from { opacity: 0; max-height: 0; }
+            to { opacity: 1; max-height: 200px; }
+        }
+
+        .token-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .token-prompt {
+            color: #888888;
+            font-size: 0.78rem;
+            flex-shrink: 0;
+        }
+
+        .token-row input {
+            background: #111111;
+            border: 1px solid #333333;
+            padding: 7px 12px;
+            border-radius: 3px;
+            flex: 1;
+            color: #ffffff;
+            font-size: 0.78rem;
+        }
+        .token-row input:focus { outline: none; border-color: #ffffff; }
+
+        .token-row button {
+            background: #ffffff;
+            color: #000000;
+            border: none;
+            padding: 7px 16px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.78rem;
+            transition: opacity 0.15s;
+        }
+        .token-row button:hover { opacity: 0.85; }
+
+        .token-note {
+            font-size: 0.68rem;
+            color: #555555;
+            margin-top: 8px;
+        }
+
+        /* ── Main Content ── */
+        .term-body {
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ── Input Line ── */
+        .input-line {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .type-selector {
+            display: flex;
+            border: 1px solid #222222;
+            border-radius: 3px;
+            overflow: hidden;
+            height: 40px;
+        }
+
+        .type-btn {
+            background: #0a0a0a;
+            border: none;
+            border-right: 1px solid #222222;
+            padding: 0 16px;
+            cursor: pointer;
+            color: #555555;
+            font-size: 0.72rem;
+            font-weight: 600;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            text-transform: capitalize;
+        }
+        .type-btn:last-child { border-right: none; }
+        .type-btn:hover { background: #111111; color: #aaaaaa; }
+        
+        .type-btn.active-model { background: #1a1407; color: #f59e0b; }
+        .type-btn.active-dataset { background: #07140d; color: #10b981; }
+        .type-btn.active-space { background: #0d0d1a; color: #6366f1; }
+
+        .prompt-group {
+            display: flex;
+            align-items: center;
+            background: #0a0a0a;
+            border: 1px solid #222222;
+            border-radius: 3px;
+            padding: 0 14px;
+            height: 40px;
+            flex: 1;
+            transition: border-color 0.15s;
+        }
+        .prompt-group:focus-within { border-color: #ffffff; }
+
+        .prompt-symbol {
+            color: #555555;
+            font-size: 0.82rem;
+            margin-right: 8px;
+            white-space: nowrap;
+            font-weight: 500;
+        }
+
+        .prompt-group input {
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            width: 100%;
+            outline: none;
+            font-size: 0.82rem;
+            font-weight: 400;
+        }
+        .prompt-group input::placeholder { color: #444444; }
+
+        .exec-btn {
+            background: #ffffff;
+            color: #000000;
+            border: none;
+            padding: 0 24px;
+            border-radius: 3px;
+            font-weight: 700;
+            cursor: pointer;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.82rem;
+            transition: opacity 0.15s;
+            white-space: nowrap;
+        }
+        .exec-btn:hover { opacity: 0.85; }
+        .exec-btn:disabled { opacity: 0.4; cursor: wait; }
+
+        /* ── Status ── */
+        #statusMsg {
+            padding: 10px 14px;
+            margin-bottom: 14px;
+            font-size: 0.78rem;
+            border-radius: 3px;
+            display: none;
+            border: 1px solid #222222;
+        }
+        .error { color: #ffffff; background: #1a0000; border-color: #440000 !important; }
+        .loading { color: #ffffff; background: #0a0a0a; border-color: #333333 !important; }
+
+        /* ── Empty / Home State ── */
+        .empty-state {
+            text-align: center;
+            padding-top: 40px;
+        }
+
+        .empty-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 8px;
+        }
+
+        .empty-desc {
+            color: #666666;
+            font-size: 0.8rem;
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+
+        .section-label {
+            font-size: 0.7rem;
+            color: #555555;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 600;
+            margin-bottom: 14px;
+        }
+
+        .org-cloud {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            max-width: 850px;
+            margin: 0 auto;
+        }
+        
+        .homepage-section { margin-bottom: 32px; }
+
+        .org-chip {
+            background: transparent;
+            border: 1px solid #222222;
+            color: #888888;
+            padding: 6px 14px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 500;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .org-chip:hover {
+            border-color: #ffffff;
+            color: #ffffff;
+        }
+
+        .tag-type {
+            font-size: 0.6rem;
+            padding: 2px 7px;
+            border-radius: 2px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: 1px solid #333;
+        }
+        .tag-type.model { color: #f59e0b; background: #1a1407; border-color: #4d3d11; }
+        .tag-type.dataset { color: #10b981; background: #07140d; border-color: #114d38; }
+        .tag-type.space { color: #6366f1; background: #0d0d1a; border-color: #2a2a66; }
+
+        /* ── Repo Info Card ── */
+        .profile-block {
+            border: 1px solid #222222;
+            border-radius: 3px;
+            padding: 20px;
+            margin-bottom: 16px;
+            animation: termSlide 0.25s ease-out;
+        }
+
+        .profile-top {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .profile-avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 4px;
+            border: 1px solid #333333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+            background: #111111;
+        }
+        .profile-avatar i { font-size: 1.4rem; color: #666666; }
+
+        .profile-info { flex: 1; }
+
+        .profile-name {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .profile-name a { color: #ffffff; }
+        .profile-name a:hover { text-decoration: underline; }
+
+        .org-badge {
+            font-size: 0.6rem;
+            padding: 2px 8px;
+            border-radius: 2px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: #1a1a1a;
+            color: #888888;
+            border: 1px solid #333333;
+        }
+        .org-badge.model { color: #f59e0b; border-color: #4d3d11; background: #1a1407; }
+        .org-badge.dataset { color: #10b981; border-color: #114d38; background: #07140d; }
+        .org-badge.space { color: #6366f1; border-color: #2a2a66; background: #0d0d1a; }
+
+        .profile-fullname {
+            font-size: 0.78rem;
+            color: #666666;
+            margin-top: 2px;
+        }
+
+        .profile-members {
+            font-size: 0.72rem;
+            color: #555555;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .profile-members span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            color: #888888;
+            font-weight: 500;
+        }
+        .profile-members span i { color: #555555; font-size: 0.72rem; }
+
+        /* ── Tree Wrapper / Toolbar ── */
+        .tree-wrapper {
+            border: 1px solid #222222;
+            border-radius: 3px;
+            display: flex;
+            flex-direction: column;
+            background: #000000;
+            overflow: hidden;
+        }
+
+        .tree-header {
+            background: #0a0a0a;
+            padding: 10px 16px;
+            border-bottom: 1px solid #222222;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .tools-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .filter-pill {
+            background: transparent;
+            border: 1px solid #222222;
+            color: #666666;
+            padding: 5px 12px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.72rem;
+            font-weight: 600;
+            transition: all 0.15s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .filter-pill:hover { border-color: #555555; color: #aaaaaa; }
+
+        .dropdown { position: relative; display: inline-block; }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background: #111111;
+            min-width: 180px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            border: 1px solid #333333;
+            border-radius: 3px;
+            z-index: 100;
+            top: 100%;
+            left: 0;
+            margin-top: 4px;
+            padding: 4px 0;
+        }
+        .dropdown.active .dropdown-content { display: block; }
+        .dropdown-content a {
+            color: #aaaaaa;
+            padding: 8px 14px;
+            text-decoration: none;
+            display: block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .dropdown-content a:hover { background: #1a1a1a; color: #ffffff; }
+
+        .copy-btn {
+            background: #ffffff;
+            color: #000000;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 3px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .copy-btn:hover { opacity: 0.85; }
+
+        .filter-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 0;
+            border-bottom: 1px solid #1a1a1a;
+            padding: 10px 16px;
+            background: #050505;
+        }
+
+        .filter-search {
+            margin-left: 0;
+            background: #0a0a0a;
+            border: 1px solid #222222;
+            border-radius: 3px;
+            padding: 5px 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: border-color 0.15s;
+            width: 100%;
+        }
+        .filter-search:focus-within { border-color: #ffffff; }
+        .filter-search-icon { color: #555555; font-size: 0.72rem; }
+        .filter-search input {
+            font-size: 0.72rem;
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            outline: none;
+        }
+        .filter-search input::placeholder { color: #444444; }
+
+        /* ── Terminal Window ── */
+        .terminal-window {
+            background: #000000;
+            display: flex;
+            overflow: auto;
+            font-size: 12.5px;
+            line-height: 1.7;
+            max-height: 65vh;
+        }
+
+        .line-col {
+            padding: 14px 10px;
+            text-align: right;
+            color: #333333;
+            border-right: 1px solid #1a1a1a;
+            min-width: 44px;
+            user-select: none;
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+        .line-col div {
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .code-col {
+            padding: 14px;
+            flex: 1;
+            white-space: pre;
+            min-width: 0;
+        }
+
+        .tree-line {
+            display: flex;
+            align-items: center;
+            height: 30px;
+            border-radius: 2px;
+            padding: 0 6px;
+            gap: 2px;
+        }
+        .tree-line:hover { background: #0d0d0d; }
+
+        .t-prefix {
+            color: #444444;
+            white-space: pre;
+            margin-right: 4px;
+            flex-shrink: 0;
+        }
+
+        .t-icon {
+            width: 22px;
+            text-align: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 8px;
+            font-size: 0.85rem;
+            color: #888888;
+            flex-shrink: 0;
+        }
+
+        .t-name {
+            color: #ffffff;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+        }
+        .t-name.folder { font-weight: 700; }
+        .t-name a { color: #ffffff; transition: color 0.1s; }
+        .t-name a:hover { color: #cccccc; text-decoration: underline; }
+
+        .t-meta {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+            padding-left: 12px;
+        }
+
+        .t-size {
+            font-size: 0.65rem;
+            color: #555555;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .lfs-badge {
+            font-size: 0.6rem;
+            padding: 1px 6px;
+            border-radius: 2px;
+            background: #1a1a1a;
+            color: #888;
+            border: 1px solid #333;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .sub-copy {
+            opacity: 0;
+            background: none;
+            border: none;
+            color: #555555;
+            cursor: pointer;
+            padding: 3px;
+            font-size: 0.72rem;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+        }
+        .tree-line:hover .sub-copy { opacity: 1; }
+        .sub-copy:hover { color: #ffffff; }
+
+        .no-data {
+            padding: 40px 20px;
+            text-align: center;
+            color: #555555;
+            font-size: 0.82rem;
+        }
+
+        /* ── Footer ── */
+        .footer {
+            padding: 30px 20px;
+            text-align: center;
+            font-size: 0.68rem;
+            color: #333333;
+            margin-top: auto;
+            border-top: 1px solid #111111;
+        }
+        .footer a { color: #888888; font-weight: 600; }
+        .footer a:hover { color: #ffffff; }
+
+        /* ── Spinner ── */
+        .spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #333333;
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .hidden { display: none !important; }
+
+        /* ── Overlay ── */
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .overlay-content {
+            background: #000000;
+            border: 1px solid #333333;
+            border-radius: 4px;
+            padding: 24px;
+            width: 100%;
+            max-width: 500px;
+            position: relative;
+            margin: 20px;
+        }
+        .overlay-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 8px;
+        }
+        .overlay-desc {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 16px;
+        }
+        .share-box {
+            display: flex;
+            gap: 10px;
+        }
+        .share-box input {
+            flex: 1;
+            background: #111111;
+            border: 1px solid #333333;
+            padding: 8px 12px;
+            border-radius: 3px;
+            color: #ffffff;
+            font-family: inherit;
+            font-size: 0.8rem;
+            outline: none;
+        }
+        .share-box input:focus { border-color: #ffffff; }
+        .close-btn {
+            position: absolute;
+            top: 12px; right: 12px;
+            background: transparent;
+            border: none;
+            color: #888;
+            font-size: 1.5rem;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .close-btn:hover { color: #fff; }
+
+        /* ── Responsive ── */
+        @media (max-width: 640px) {
+            .input-line { flex-direction: column; }
+            .type-selector { width: 100%; }
+            .type-btn { flex: 1; justify-content: center; }
+            .exec-btn { width: 100%; justify-content: center; }
+            .profile-top { flex-direction: column; text-align: center; }
+            .profile-name { justify-content: center; }
+            .profile-members { justify-content: center; }
+            .tree-header { flex-direction: column; align-items: stretch; }
+            .tools-group { justify-content: space-between; }
+            .terminal-window { max-height: 50vh; }
+        }
+    </style>
 </head>
 <body>
-    <div class="app-container">
-        <header>
-            <div class="brand">
-                <a href="#">
-                    <div class="brand-icon"><i class="fas fa-tree"></i></div>
-                    <span>hf-tree🤗</span>
-                </a>
-            </div>
-            <div class="header-actions">
-                <button id="privateRepoBtn" class="text-btn" title="Access Private Repos">
-                    <i class="fas fa-lock"></i> Token
-                </button>
-                <button id="themeToggle" class="icon-btn" aria-label="Toggle Theme">
-                    <i class="fas fa-sun sun-icon"></i>
-                    <i class="fas fa-moon moon-icon"></i>
+    <div class="terminal-shell">
+        <!-- Title Bar -->
+        <div class="title-bar">
+            <div class="title-dot"></div>
+            <span class="title-text">[hftree-visualizer]</span>
+            <div class="title-actions">
+                <button id="privateRepoBtn" class="title-btn" title="Access Private Repos">
+                    <i class="fas fa-lock"></i> token
                 </button>
             </div>
-        </header>
-
-        <div id="tokenSection" class="token-panel" style="display: none;">
-            <div class="token-inner">
-                <i class="fas fa-key"></i>
-                <input type="password" id="hfToken" placeholder="Paste HuggingFace Access Token (hf_...)">
-                <button id="saveTokenBtn">Save</button>
-                <button id="clearTokenBtn" style="display:none;">Clear</button>
-            </div>
-            <p class="token-warning">
-                <i class="fas fa-exclamation-triangle"></i> Token is saved to your browser's <b>LocalStorage</b>. Do not use on public computers.
-            </p>
         </div>
 
-        <div class="search-section">
-            <div class="type-selector">
-                <button class="type-btn active-model" data-type="models" id="typeModel">
-                    <i class="fas fa-cube"></i> Model
-                </button>
-                <button class="type-btn" data-type="datasets" id="typeDataset">
-                    <i class="fas fa-database"></i> Dataset
-                </button>
-                <button class="type-btn" data-type="spaces" id="typeSpace">
-                    <i class="fas fa-rocket"></i> Space
-                </button>
+        <!-- Token Panel -->
+        <div id="tokenSection" class="token-section hidden">
+            <div class="token-row">
+                <span class="token-prompt">token ~$</span>
+                <input type="password" id="hfToken" placeholder="paste hf access token (hf_...)">
+                <button id="saveTokenBtn">save</button>
+                <button id="clearTokenBtn" class="hidden">clear</button>
             </div>
-            <div class="input-group main-input">
-                <span class="prefix" id="urlPrefix">hf.co/</span>
-                <input type="text" id="repoInput" placeholder="username/repo-name" autocomplete="off">
-            </div>
-            <div class="input-group branch-input">
-                <span class="prefix">rev:</span>
-                <input type="text" id="branchInput" placeholder="main" autocomplete="off">
-            </div>
-            <button id="fetchBtn" class="primary-btn">
-                <i class="fas fa-search"></i> Fetch
-            </button>
+            <p class="token-note">token stored in localStorage. required for private repos.</p>
         </div>
 
-        <div id="statusMsg" style="display: none;"></div>
-
-        <div id="repoInfoCard" class="repo-info-card">
-            <div class="repo-info-header">
-                <div class="repo-info-left">
-                    <span class="repo-type-badge" id="repoTypeBadge">MODEL</span>
-                    <span class="repo-info-name" id="repoInfoName"></span>
+        <!-- Main Body -->
+        <div class="term-body">
+            <!-- Input -->
+            <div class="input-line">
+                <div class="type-selector">
+                    <button class="type-btn active-model" data-type="models" id="typeModel"><i class="fas fa-cube"></i> model</button>
+                    <button class="type-btn" data-type="datasets" id="typeDataset"><i class="fas fa-database"></i> dataset</button>
+                    <button class="type-btn" data-type="spaces" id="typeSpace"><i class="fas fa-rocket"></i> space</button>
                 </div>
-                <div class="repo-info-stats" id="repoInfoStats"></div>
+                <div class="prompt-group" style="flex:2;">
+                    <span class="prompt-symbol">~$&nbsp;fetch&nbsp;<span id="urlPrefix">hf.co/</span></span>
+                    <input type="text" id="repoInput" placeholder="username/repo-name" autocomplete="off">
+                </div>
+                <div class="prompt-group" style="flex:1; max-width: 180px;">
+                    <span class="prompt-symbol">rev:</span>
+                    <input type="text" id="branchInput" placeholder="main" autocomplete="off">
+                </div>
+                <button id="fetchBtn" class="exec-btn">
+                    <i class="fas fa-terminal"></i> execute
+                </button>
             </div>
-        </div>
 
-        <div id="emptyState" class="empty-state">
-            <div class="homepage-section">
-                <h3 style="font-size: 1.3rem; text-transform: none; letter-spacing: -0.02em; color: var(--text);">
-                    explore huggingface repositories
-                </h3>
-                <p>Visualize the file tree of any Model, Dataset, or Space</p>
-            </div>
-            <div class="homepage-section">
-                <h3>Featured</h3>
-                <div id="featuredCloud" class="tag-cloud"></div>
-            </div>
-            <div class="homepage-section">
-                <h3>Popular Models</h3>
-                <div id="modelCloud" class="tag-cloud"></div>
-            </div>
-            <div class="homepage-section">
-                <h3>Popular Datasets</h3>
-                <div id="datasetCloud" class="tag-cloud"></div>
-            </div>
-        </div>
+            <div id="statusMsg"></div>
 
-        <div id="treeWrapper" class="tree-wrapper" style="display: none;">
-            <div class="toolbar">
-                <div class="tools-group">
-                    <div class="dropdown">
-                        <button class="tool-btn" id="sortBtnLabel">
-                            <i class="fas fa-sort-amount-down"></i> Sort
-                        </button>
-                        <div class="dropdown-content">
-                            <a href="#" data-sort="folder-az">Folders First (A-Z)</a>
-                            <a href="#" data-sort="folder-za">Folders First (Z-A)</a>
-                            <a href="#" data-sort="alpha-az">Name (A-Z)</a>
-                            <a href="#" data-sort="alpha-za">Name (Z-A)</a>
-                            <a href="#" data-sort="size-desc">Size (Largest)</a>
-                            <a href="#" data-sort="size-asc">Size (Smallest)</a>
+            <!-- Empty State -->
+            <div id="emptyState" class="empty-state">
+                <div class="homepage-section">
+                    <div class="empty-title">hugging-face repo structure visualizer</div>
+                    <div class="empty-desc">effortlessly explore and visualize the file structure of any model, dataset, or space online without cloning.</div>
+                </div>
+                <div class="homepage-section">
+                    <div class="section-label">featured</div>
+                    <div id="featuredCloud" class="org-cloud"></div>
+                </div>
+                <div class="homepage-section">
+                    <div class="section-label">popular models</div>
+                    <div id="modelCloud" class="org-cloud"></div>
+                </div>
+                <div class="homepage-section">
+                    <div class="section-label">popular datasets</div>
+                    <div id="datasetCloud" class="org-cloud"></div>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div id="resultsSection" class="hidden">
+                <!-- Repo Info -->
+                <div id="repoInfoCard" class="profile-block">
+                    <div class="profile-top">
+                        <div class="profile-avatar">
+                            <i class="fas fa-folder-tree"></i>
                         </div>
-                    </div>
-                    <div class="dropdown">
-                        <button class="tool-btn" id="styleBtnLabel">
-                            <i class="fas fa-code-branch"></i> Style
-                        </button>
-                        <div class="dropdown-content">
-                            <a href="#" data-style="classic">Classic (└──)</a>
-                            <a href="#" data-style="slashed">Slashed (/src)</a>
-                            <a href="#" data-style="plus">ASCII (+--)</a>
-                            <a href="#" data-style="minimal">Minimal (Indent)</a>
+                        <div class="profile-info">
+                            <div class="profile-name">
+                                <a id="repoInfoName" href="#" target="_blank" rel="noopener"></a>
+                                <span class="org-badge" id="repoTypeBadge">MODEL</span>
+                            </div>
+                            <div class="profile-fullname" id="repoBranch"></div>
+                            <div class="profile-members" id="repoInfoStats"></div>
                         </div>
                     </div>
                 </div>
-                <div class="tools-group right">
-                    <button id="shareBtn" class="tool-btn">
-                        <i class="fas fa-share-alt"></i> Share
-                    </button>
-                    <button id="copyAllBtn" class="tool-btn action-btn">
-                        <i class="far fa-copy"></i> Copy Tree
-                    </button>
+
+                <!-- Tree -->
+                <div class="tree-wrapper" id="treeWrapper">
+                    <div class="tree-header">
+                        <div class="tools-group">
+                            <div class="dropdown">
+                                <button class="filter-pill" id="sortBtnLabel">
+                                    <i class="fas fa-sort-amount-down"></i> sort
+                                </button>
+                                <div class="dropdown-content" id="sortDropdown">
+                                    <a href="#" data-sort="folder-az">Folders First (A-Z)</a>
+                                    <a href="#" data-sort="folder-za">Folders First (Z-A)</a>
+                                    <a href="#" data-sort="alpha-az">Name (A-Z)</a>
+                                    <a href="#" data-sort="alpha-za">Name (Z-A)</a>
+                                    <a href="#" data-sort="size-desc">Size (Largest)</a>
+                                    <a href="#" data-sort="size-asc">Size (Smallest)</a>
+                                </div>
+                            </div>
+                            <div class="dropdown">
+                                <button class="filter-pill" id="styleBtnLabel">
+                                    <i class="fas fa-code-branch"></i> style
+                                </button>
+                                <div class="dropdown-content" id="styleDropdown">
+                                    <a href="#" data-style="classic">Classic (└──)</a>
+                                    <a href="#" data-style="slashed">Slashed (/src)</a>
+                                    <a href="#" data-style="plus">ASCII (+--)</a>
+                                    <a href="#" data-style="minimal">Minimal (Indent)</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tools-group" style="gap: 8px;">
+                            <button id="shareBtn" class="filter-pill">
+                                <i class="fas fa-share-alt"></i> share
+                            </button>
+                            <button id="copyAllBtn" class="copy-btn">
+                                <i class="far fa-copy"></i> copy tree
+                            </button>
+                        </div>
+                    </div>
+                    <div class="filter-bar">
+                        <div class="filter-search">
+                            <span class="filter-search-icon"><i class="fas fa-search"></i></span>
+                            <input type="text" id="treeFilter" placeholder="filter files... (e.g. .safetensors, config)">
+                        </div>
+                    </div>
+                    <div class="terminal-window">
+                        <div class="line-col" id="lineNumbers"></div>
+                        <div class="code-col" id="treeContent"></div>
+                    </div>
                 </div>
             </div>
-            <div class="tree-search">
-                <input type="text" id="treeFilter" placeholder="Filter files… (e.g. .safetensors, config, README)">
-            </div>
-            <div class="terminal-window">
-                <div id="lineNumbers" class="line-col"></div>
-                <div id="treeContent" class="code-col"></div>
-            </div>
-        </div>
 
-        <div class="footer">
-            Built by <a href="https://hf.co/prithivMLmods" target="_blank" rel="noopener">prithivMLmods</a>
+            <div class="footer">
+                built by <a href="https://hf.co/prithivMLmods" target="_blank" rel="noopener">prithivMLmods</a>
+            </div>
         </div>
     </div>
 
-    <div id="shareOverlay" class="overlay">
+    <!-- Share Overlay -->
+    <div id="shareOverlay" class="overlay hidden">
         <div class="overlay-content">
-            <h3>Share View</h3>
+            <h3>share view</h3>
+            <p class="overlay-desc">copy the link below to share this exact repository view.</p>
             <div class="share-box">
                 <input type="text" id="shareInput" readonly>
-                <button id="copyShareBtn"><i class="far fa-copy"></i></button>
+                <button id="copyShareBtn" class="copy-btn"><i class="far fa-copy"></i></button>
             </div>
             <button id="closeOverlay" class="close-btn">&times;</button>
         </div>
     </div>
 
-    <script type="module" src="index.tsx"></script>
-<script type="module" src="/index.tsx"></script>
+    <script>
+    const HF_API = 'https://huggingface.co/api';
+
+    const FEATURED = [
+        { repo: 'prithivMLmods/Qwen3-VL-4B-Instruct-Unredacted-MAX', type: 'models', label: 'Qwen3-VL-4B-Instruct' },
+        { repo: 'prithivMLmods/Qwen3-VL-abliterated-MAX-Fast', type: 'spaces', label: 'Qwen3-VL Space' },
+        { repo: 'prithivMLmods/LAP2-K-Think-v1.b', type: 'datasets', label: 'LAP2-K-Think' },
+    ];
+
+    const POPULAR_MODELS = [
+        { repo: 'meta-llama/Llama-3.1-8B-Instruct', type: 'models' },
+        { repo: 'mistralai/Mistral-7B-Instruct-v0.3', type: 'models' },
+        { repo: 'google/gemma-2-9b-it', type: 'models' },
+        { repo: 'Qwen/Qwen2.5-7B-Instruct', type: 'models' },
+        { repo: 'stabilityai/stable-diffusion-xl-base-1.0', type: 'models' },
+        { repo: 'openai/whisper-large-v3', type: 'models' },
+        { repo: 'microsoft/Phi-3-mini-4k-instruct', type: 'models' },
+        { repo: 'black-forest-labs/FLUX.1-dev', type: 'models' },
+    ];
+
+    const POPULAR_DATASETS = [
+        { repo: 'tatsu-lab/alpaca', type: 'datasets' },
+        { repo: 'databricks/databricks-dolly-15k', type: 'datasets' },
+        { repo: 'Open-Orca/OpenOrca', type: 'datasets' },
+        { repo: 'HuggingFaceFW/fineweb', type: 'datasets' },
+        { repo: 'allenai/c4', type: 'datasets' },
+    ];
+
+    let currentData = [];
+    let currentSort = 'folder-az';
+    let currentStyle = 'classic';
+    let currentType = 'models';
+    let currentRepo = '';
+    let currentBranch = 'main';
+    let filterText = '';
+
+    const $ = id => document.getElementById(id);
+    const els = {
+        repo: $('repoInput'),
+        branch: $('branchInput'),
+        fetchBtn: $('fetchBtn'),
+        wrapper: $('treeWrapper'),
+        resultsSection: $('resultsSection'),
+        empty: $('emptyState'),
+        status: $('statusMsg'),
+        lineNums: $('lineNumbers'),
+        treeContent: $('treeContent'),
+        privateBtn: $('privateRepoBtn'),
+        tokenPanel: $('tokenSection'),
+        hfToken: $('hfToken'),
+        saveToken: $('saveTokenBtn'),
+        clearToken: $('clearTokenBtn'),
+        copyAll: $('copyAllBtn'),
+        shareBtn: $('shareBtn'),
+        overlay: $('shareOverlay'),
+        shareInput: $('shareInput'),
+        copyShareBtn: $('copyShareBtn'),
+        closeOverlay: $('closeOverlay'),
+        sortBtnLabel: $('sortBtnLabel'),
+        styleBtnLabel: $('styleBtnLabel'),
+        dropdowns: document.querySelectorAll('.dropdown'),
+        urlPrefix: $('urlPrefix'),
+        typeModel: $('typeModel'),
+        typeDataset: $('typeDataset'),
+        typeSpace: $('typeSpace'),
+        repoInfoCard: $('repoInfoCard'),
+        repoTypeBadge: $('repoTypeBadge'),
+        repoInfoName: $('repoInfoName'),
+        repoInfoStats: $('repoInfoStats'),
+        repoBranch: $('repoBranch'),
+        treeFilter: $('treeFilter'),
+    };
+
+    function getHeaders() {
+        const t = localStorage.getItem('hft_token');
+        const h = { 'Accept': 'application/json' };
+        if (t && t.trim()) h['Authorization'] = `Bearer ${t.trim()}`;
+        return h;
+    }
+
+    function getRepoPageUrl(type, repo) {
+        if (type === 'datasets') return `https://huggingface.co/datasets/${repo}`;
+        if (type === 'spaces') return `https://huggingface.co/spaces/${repo}`;
+        return `https://huggingface.co/${repo}`;
+    }
+
+    function formatSize(bytes) {
+        if (!bytes) return '0 B';
+        const u = ['B', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(1024));
+        return `${(bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1)} ${u[i]}`;
+    }
+
+    function escapeRegex(s) {
+        return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function getFileIcon(name) {
+        const ext = name.split('.').pop() ? name.split('.').pop().toLowerCase() : '';
+        const nl = name.toLowerCase();
+        if (nl === 'dockerfile') return 'fa-brands fa-docker';
+        if (nl === 'license' || nl === 'licence') return 'fa-solid fa-scale-balanced';
+        if (nl === 'readme.md' || nl === 'readme') return 'fa-solid fa-book';
+        if (nl === 'requirements.txt') return 'fa-solid fa-list-check';
+        if (nl === '.gitignore' || nl === '.gitattributes') return 'fa-brands fa-git-alt';
+        const map = {
+            py: 'fa-brands fa-python', js: 'fa-brands fa-js', ts: 'fa-brands fa-js',
+            jsx: 'fa-brands fa-react', tsx: 'fa-brands fa-react',
+            html: 'fa-brands fa-html5', css: 'fa-brands fa-css3-alt',
+            md: 'fa-solid fa-file-lines', json: 'fa-solid fa-file-code',
+            yaml: 'fa-solid fa-file-code', yml: 'fa-solid fa-file-code', toml: 'fa-solid fa-file-code',
+            txt: 'fa-solid fa-file-lines', csv: 'fa-solid fa-file-csv',
+            png: 'fa-solid fa-file-image', jpg: 'fa-solid fa-file-image', jpeg: 'fa-solid fa-file-image',
+            gif: 'fa-solid fa-file-image', svg: 'fa-solid fa-file-image', webp: 'fa-solid fa-file-image',
+            mp4: 'fa-solid fa-file-video', mp3: 'fa-solid fa-file-audio', wav: 'fa-solid fa-file-audio',
+            pdf: 'fa-solid fa-file-pdf', zip: 'fa-solid fa-file-zipper', tar: 'fa-solid fa-file-zipper', gz: 'fa-solid fa-file-zipper',
+            safetensors: 'fa-solid fa-cube', bin: 'fa-solid fa-cube', gguf: 'fa-solid fa-cube',
+            pt: 'fa-solid fa-cube', pth: 'fa-solid fa-cube', onnx: 'fa-solid fa-cube', h5: 'fa-solid fa-cube',
+            parquet: 'fa-solid fa-database', arrow: 'fa-solid fa-database',
+            rs: 'fa-brands fa-rust', go: 'fa-brands fa-golang', java: 'fa-brands fa-java',
+            sh: 'fa-solid fa-terminal', bash: 'fa-solid fa-terminal',
+        };
+        return map[ext] || 'fa-regular fa-file';
+    }
+
+    async function fetchTree(type, repo, branch, path = '') {
+        const url = path
+            ? `${HF_API}/${type}/${repo}/tree/${branch}/${path}`
+            : `${HF_API}/${type}/${repo}/tree/${branch}`;
+        const resp = await fetch(url, { headers: getHeaders() });
+        if (!resp.ok) {
+            if (resp.status === 401) throw new Error('401: Unauthorized. Check your token.');
+            if (resp.status === 403) throw new Error('403: Forbidden / Rate Limited.');
+            if (resp.status === 404) {
+                if (branch === 'main' && !path) {
+                    const r2 = await fetch(`${HF_API}/${type}/${repo}/tree/master`, { headers: getHeaders() });
+                    if (r2.ok) return { items: await r2.json(), switchedBranch: 'master' };
+                }
+                throw new Error('404: Repository not found (or is private).');
+            }
+            throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+        }
+        return { items: await resp.json(), switchedBranch: null };
+    }
+
+    async function fetchFullTree(type, repo, branch) {
+        let all = [], switched = null;
+        async function recurse(path) {
+            const r = await fetchTree(type, repo, switched || branch, path);
+            if (r.switchedBranch && !switched) switched = r.switchedBranch;
+            for (const item of r.items) {
+                all.push({
+                    path: item.path,
+                    type: item.type === 'directory' ? 'tree' : 'blob',
+                    size: item.size || 0,
+                    lfs: item.lfs || null,
+                });
+                if (item.type === 'directory') {
+                    try { await recurse(item.path); }
+                    catch (e) { console.warn(`Skip ${item.path}: ${e.message}`); }
+                }
+            }
+        }
+        await recurse('');
+        return { tree: all, branch: switched || branch };
+    }
+
+    function buildVisualHierarchy(sortedList) {
+        const root = { children: [] }, map = { '': root };
+        sortedList.forEach(item => { map[item.path] = { ...item, name: item.path.split('/').pop(), children: [] }; });
+        sortedList.forEach(item => {
+            const pts = item.path.split('/'); pts.pop();
+            (map[pts.join('/')] || root).children.push(map[item.path]);
+        });
+        const result = [];
+        function traverse(node, prefix, isLast) {
+            const conn = isLast ? "└── " : "├── ";
+            result.push({
+                name: node.name, path: node.path, type: node.type,
+                size: node.size, lfs: node.lfs,
+                prefix: prefix + conn,
+                indent: prefix.replace(/│   /g, '    ').replace(/├── /g, '    ').replace(/└── /g, '    ') + '    '
+            });
+            if (node.children && node.children.length) {
+                const cp = prefix + (isLast ? "    " : "│   ");
+                node.children.forEach((c, i) => traverse(c, cp, i === node.children.length - 1));
+            }
+        }
+        root.children.forEach((c, i) => traverse(c, "", i === root.children.length - 1));
+        return result;
+    }
+
+    function sortTree(data, mode) {
+        const s = [...data];
+        s.sort((a, b) => {
+            const ad = a.type === 'tree' ? 1 : 0, bd = b.type === 'tree' ? 1 : 0;
+            const an = a.path.toLowerCase(), bn = b.path.toLowerCase();
+            switch (mode) {
+                case 'folder-az': if (ad !== bd) return bd - ad; return an.localeCompare(bn);
+                case 'folder-za': if (ad !== bd) return bd - ad; return bn.localeCompare(an);
+                case 'alpha-az': return an.localeCompare(bn);
+                case 'alpha-za': return bn.localeCompare(an);
+                case 'size-desc': return (b.size || 0) - (a.size || 0);
+                case 'size-asc': return (a.size || 0) - (b.size || 0);
+                default: return 0;
+            }
+        });
+        return s;
+    }
+
+    function render() {
+        els.lineNums.innerHTML = '';
+        els.treeContent.innerHTML = '';
+        let data = currentData;
+        if (filterText) {
+            const mp = new Set();
+            currentData.forEach(item => {
+                if (item.path.toLowerCase().includes(filterText)) {
+                    mp.add(item.path);
+                    const pts = item.path.split('/');
+                    for (let i = 1; i < pts.length; i++) mp.add(pts.slice(0, i).join('/'));
+                }
+            });
+            data = currentData.filter(i => mp.has(i.path));
+        }
+        const sorted = sortTree(data, currentSort);
+        const hier = buildVisualHierarchy(sorted);
+        const fn = document.createDocumentFragment(), fl = document.createDocumentFragment();
+        hier.forEach((item, idx) => {
+            const n = document.createElement('div');
+            n.textContent = (idx + 1).toString();
+            fn.appendChild(n);
+            const row = document.createElement('div');
+            row.className = 'tree-line';
+            row.style.animation = `fadeIn 0.1s forwards ${Math.min(idx * 2, 500)}ms`;
+            row.style.opacity = '0';
+            const ic = item.type === 'tree' ? 'fa-solid fa-folder' : getFileIcon(item.name);
+            const tc = item.type === 'tree' ? 'folder' : 'file';
+            let pre = item.prefix, nm = item.name;
+            if (currentStyle === 'minimal') pre = item.indent;
+            if (currentStyle === 'plus') pre = pre.replace(/└──/g, '+--').replace(/├──/g, '+--').replace(/│/g, '|');
+            if (currentStyle === 'slashed') {
+                if (item.type === 'tree') nm = `/${item.name}`;
+                pre = item.prefix.replace(/│/g, ' ').replace(/├──/g, ' ').replace(/└──/g, ' ');
+            }
+            const sz = item.type === 'blob' && item.size ? `<span class="t-size">${formatSize(item.size)}</span>` : '';
+            const lf = item.lfs ? `<span class="lfs-badge">LFS</span>` : '';
+            let nh = nm;
+            if (filterText && nm.toLowerCase().includes(filterText)) {
+                const rx = new RegExp(`(${escapeRegex(filterText)})`, 'gi');
+                nh = nm.replace(rx, '<mark style="background:#333333;color:#ffffff;padding:0 2px;border-radius:2px;">$1</mark>');
+            }
+            row.innerHTML = `<span class="t-prefix">${pre}</span><span class="t-icon"><i class="${ic}"></i></span><span class="t-name ${tc}">${nh}</span><span class="t-meta">${sz}${lf}<button class="sub-copy" data-path="${item.path}" title="Copy Path"><i class="far fa-copy"></i></button></span>`;
+            fl.appendChild(row);
+        });
+        els.lineNums.appendChild(fn);
+        els.treeContent.appendChild(fl);
+    }
+
+    function showMsg(text, type) {
+        els.status.style.display = text ? 'block' : 'none';
+        els.status.innerHTML = text;
+        els.status.className = type;
+    }
+
+    function showRepoInfo(repo, branch) {
+        const tc = currentType === 'models' ? 'model' : currentType === 'datasets' ? 'dataset' : 'space';
+        const tl = currentType === 'models' ? 'MODEL' : currentType === 'datasets' ? 'DATASET' : 'SPACE';
+        els.repoTypeBadge.className = `org-badge ${tc}`;
+        els.repoTypeBadge.textContent = tl;
+        els.repoInfoName.innerHTML = `<a href="${getRepoPageUrl(currentType, repo)}" target="_blank" rel="noopener">${repo}</a>`;
+        els.repoBranch.textContent = `branch: ${branch}`;
+        const fc = currentData.filter(i => i.type === 'blob').length;
+        const dc = currentData.filter(i => i.type === 'tree').length;
+        const ts = currentData.reduce((a, i) => a + (i.size || 0), 0);
+        els.repoInfoStats.innerHTML = `
+            <span><i class="far fa-file"></i> ${fc} files</span>
+            <span><i class="far fa-folder"></i> ${dc} folders</span>
+            <span><i class="fas fa-weight-hanging"></i> ${formatSize(ts)}</span>
+            <span><i class="fas fa-code-branch"></i> ${branch}</span>`;
+        els.repoInfoCard.classList.remove('hidden');
+    }
+
+    async function loadTree() {
+        const repo = els.repo.value.trim();
+        const branch = els.branch.value.trim() || 'main';
+        if (!repo.includes('/')) return showMsg("error: invalid format. use 'username/repo-name'", "error");
+        currentRepo = repo; currentBranch = branch;
+        filterText = ''; els.treeFilter.value = '';
+        if (els.empty) els.empty.classList.add('hidden');
+        els.wrapper.classList.add('hidden');
+        els.repoInfoCard.classList.add('hidden');
+        showMsg(`<span class="spinner"></span> fetching ${currentType}/${repo} (${branch})...`, "loading");
+        els.fetchBtn.disabled = true;
+        try {
+            const ck = `hft_${currentType}_${repo}_${branch}`;
+            const ta = !!localStorage.getItem('hft_token');
+            const cached = !ta ? sessionStorage.getItem(ck) : null;
+            if (cached) {
+                const p = JSON.parse(cached);
+                currentData = p.tree; currentBranch = p.branch;
+                showMsg("", "");
+            } else {
+                const r = await fetchFullTree(currentType, repo, branch);
+                currentData = r.tree; currentBranch = r.branch;
+                if (r.branch !== branch) {
+                    showMsg(`branch '${branch}' not found -> '${r.branch}'.`, "loading");
+                    els.branch.value = r.branch;
+                } else showMsg("", "");
+                if (!ta) try { sessionStorage.setItem(ck, JSON.stringify({ tree: currentData, branch: currentBranch })); } catch (e) { }
+            }
+            window.location.hash = `${currentType}/${repo}/${currentBranch}`;
+            document.title = `${repo} — hftree-visualizer`;
+            showRepoInfo(repo, currentBranch);
+            render();
+            els.wrapper.classList.remove('hidden');
+            els.resultsSection.classList.remove('hidden');
+        } catch (err) {
+            console.error(err);
+            const m = err.message;
+            if (m.includes('401')) {
+                showMsg(`<i class="fas fa-lock"></i> <b>unauthorized (401)</b><br>check your huggingface token or provide one.`, "error");
+            } else if (m.includes('403')) {
+                showMsg("rate limited or forbidden. try adding a token.", "error");
+            } else if (m.includes('404')) {
+                showMsg("repository not found. check name and type.", "error");
+            } else {
+                showMsg(`error: ${m}`, "error");
+            }
+            els.empty.classList.remove('hidden');
+        } finally { els.fetchBtn.disabled = false; }
+    }
+
+    function handleCopy(btn, text, isSub) {
+        navigator.clipboard.writeText(text).then(() => {
+            if (!isSub) {
+                const oh = btn.innerHTML;
+                btn.innerHTML = `<i class="fas fa-check"></i> copied!`;
+                setTimeout(() => { btn.innerHTML = oh; }, 1800);
+            } else {
+                const ic = btn.querySelector('i'), oc = ic.className;
+                ic.className = "fas fa-check";
+                setTimeout(() => { ic.className = oc; }, 1500);
+            }
+        }).catch(e => console.error("Copy failed", e));
+    }
+
+    function generateAsciiTree(data) {
+        const sorted = sortTree(data, currentSort);
+        const hier = buildVisualHierarchy(sorted);
+        const lines = [`${currentRepo} (${currentBranch})`];
+        hier.forEach(item => {
+            let pre = item.prefix, nm = item.name;
+            if (currentStyle === 'minimal') pre = item.indent;
+            if (currentStyle === 'plus') pre = pre.replace(/└──/g, '+--').replace(/├──/g, '+--').replace(/│/g, '|');
+            if (currentStyle === 'slashed') {
+                if (item.type === 'tree') nm = `/${nm}`;
+                pre = item.prefix.replace(/│/g, ' ').replace(/├──/g, ' ').replace(/└──/g, ' ');
+            }
+            const sz = item.type === 'blob' && item.size ? ` (${formatSize(item.size)})` : '';
+            lines.push(`${pre}${nm}${sz}`);
+        });
+        return lines.join('\n');
+    }
+
+    function setType(type) {
+        currentType = type;
+        [els.typeModel, els.typeDataset, els.typeSpace].forEach(b => b.classList.remove('active-model', 'active-dataset', 'active-space'));
+        if (type === 'models') { els.typeModel.classList.add('active-model'); els.urlPrefix.textContent = 'hf.co/'; }
+        if (type === 'datasets') { els.typeDataset.classList.add('active-dataset'); els.urlPrefix.textContent = 'hf.co/datasets/'; }
+        if (type === 'spaces') { els.typeSpace.classList.add('active-space'); els.urlPrefix.textContent = 'hf.co/spaces/'; }
+    }
+
+    function checkSavedToken() {
+        const t = localStorage.getItem('hft_token');
+        if (t) {
+            els.hfToken.value = t;
+            els.privateBtn.innerHTML = `<i class="fas fa-lock-open"></i> active`;
+            els.privateBtn.classList.add('active-token');
+            els.saveToken.classList.add('hidden');
+            els.clearToken.classList.remove('hidden');
+        } else {
+            els.privateBtn.innerHTML = `<i class="fas fa-lock"></i> token`;
+            els.privateBtn.classList.remove('active-token');
+            els.saveToken.classList.remove('hidden');
+            els.clearToken.classList.add('hidden');
+        }
+    }
+
+    function init() {
+        checkSavedToken();
+
+        [els.sortBtnLabel, els.styleBtnLabel].forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const p = btn.parentElement;
+                els.dropdowns.forEach((d) => { if (d !== p) d.classList.remove('active'); });
+                p.classList.toggle('active');
+            });
+        });
+        document.querySelectorAll('[data-sort]').forEach(el => {
+            el.addEventListener('click', (e) => {
+                e.preventDefault();
+                currentSort = e.target.dataset.sort;
+                els.sortBtnLabel.innerHTML = `<i class="fas fa-sort-amount-down"></i> ${e.target.innerText.toLowerCase()}`;
+                els.dropdowns.forEach((d) => d.classList.remove('active'));
+                render();
+            });
+        });
+        document.querySelectorAll('[data-style]').forEach(el => {
+            el.addEventListener('click', (e) => {
+                e.preventDefault();
+                currentStyle = e.target.dataset.style;
+                els.styleBtnLabel.innerHTML = `<i class="fas fa-code-branch"></i> ${e.target.dataset.style}`;
+                els.dropdowns.forEach((d) => d.classList.remove('active'));
+                render();
+            });
+        });
+        document.addEventListener('click', () => els.dropdowns.forEach((d) => d.classList.remove('active')));
+
+        els.fetchBtn.addEventListener('click', loadTree);
+        els.copyAll.addEventListener('click', () => handleCopy(els.copyAll, generateAsciiTree(currentData), false));
+        els.privateBtn.addEventListener('click', () => els.tokenPanel.classList.toggle('hidden'));
+        els.saveToken.addEventListener('click', () => {
+            const t = els.hfToken.value.trim();
+            if (t) localStorage.setItem('hft_token', t);
+            checkSavedToken();
+            showMsg("token saved.", "loading");
+            setTimeout(() => showMsg("", ""), 1500);
+        });
+        els.clearToken.addEventListener('click', () => {
+            localStorage.removeItem('hft_token');
+            els.hfToken.value = '';
+            checkSavedToken();
+            showMsg("token cleared.", "loading");
+            setTimeout(() => showMsg("", ""), 1500);
+        });
+        [els.typeModel, els.typeDataset, els.typeSpace].forEach(b =>
+            b.addEventListener('click', () => setType(b.dataset.type))
+        );
+        els.treeFilter.addEventListener('input', (e) => { filterText = e.target.value.trim().toLowerCase(); render(); });
+        els.treeContent.onclick = (e) => {
+            const b = e.target.closest('.sub-copy');
+            if (b) handleCopy(b, b.dataset.path, true);
+        };
+
+        els.shareBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            els.shareInput.value = window.location.href;
+            els.overlay.classList.remove('hidden');
+        });
+        els.closeOverlay.addEventListener('click', () => els.overlay.classList.add('hidden'));
+        els.overlay.addEventListener('click', (e) => { if (e.target === els.overlay) els.overlay.classList.add('hidden'); });
+        els.shareInput.addEventListener('click', () => els.shareInput.select());
+        els.copyShareBtn.addEventListener('click', () => handleCopy(els.copyShareBtn, els.shareInput.value, true));
+
+        const createRepoTag = (label, type, repo) => {
+            const btn = document.createElement('button');
+            btn.className = 'org-chip';
+            const tc = type === 'models' ? 'model' : type === 'datasets' ? 'dataset' : 'space';
+            const tl = type === 'models' ? 'MODEL' : type === 'datasets' ? 'DATA' : 'SPACE';
+            btn.innerHTML = `<span class="tag-type ${tc}">${tl}</span> ${label}`;
+            btn.addEventListener('click', () => {
+                setType(type); els.repo.value = repo; els.branch.value = 'main'; loadTree();
+            });
+            return btn;
+        };
+        FEATURED.forEach(i => $('featuredCloud').appendChild(createRepoTag(i.label || i.repo, i.type, i.repo)));
+        POPULAR_MODELS.forEach(i => $('modelCloud').appendChild(createRepoTag(i.repo, i.type, i.repo)));
+        POPULAR_DATASETS.forEach(i => $('datasetCloud').appendChild(createRepoTag(i.repo, i.type, i.repo)));
+
+        if (window.location.hash && window.location.hash.startsWith('#')) {
+            const p = window.location.hash.substring(1).split('/');
+            if (p.length >= 3 && ['models', 'datasets', 'spaces'].includes(p[0])) {
+                setType(p[0]);
+                els.repo.value = p[1] + '/' + p[2];
+                els.branch.value = p[3] || 'main';
+                loadTree();
+            }
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+    </script>
 </body>
 </html>
